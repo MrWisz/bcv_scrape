@@ -220,6 +220,12 @@
         tg.ready();
         tg.expand();
 
+        // Truncate to 2 decimals without rounding
+        function truncateDecimals(num, decimals = 2) {
+            const multiplier = Math.pow(10, decimals);
+            return Math.trunc(num * multiplier) / multiplier;
+        }
+
         // Check if cache is valid
         function getCachedRates() {
             try {
@@ -300,8 +306,12 @@
         // Display rates in UI
         function displayRates() {
             // Convert comma to dot for proper number parsing (BCV uses European format)
-            const usdRate = parseFloat(rates.USD.replace(',', '.')).toFixed(2);
-            const eurRate = parseFloat(rates.EUR.replace(',', '.')).toFixed(2);
+            const usdRateNum = parseFloat(rates.USD.replace(',', '.'));
+            const eurRateNum = parseFloat(rates.EUR.replace(',', '.'));
+
+            // Truncate to 2 decimals without rounding
+            const usdRate = truncateDecimals(usdRateNum).toFixed(2);
+            const eurRate = truncateDecimals(eurRateNum).toFixed(2);
 
             document.getElementById('usd-rate').textContent = usdRate + ' VES';
             document.getElementById('eur-rate').textContent = eurRate + ' VES';
@@ -363,13 +373,18 @@
             const rate = parseFloat(rates[currency].replace(',', '.'));
             const result = amount * rate;
 
+            // Truncate to 2 decimals without rounding
+            const truncatedAmount = truncateDecimals(amount);
+            const truncatedRate = truncateDecimals(rate);
+            const truncatedResult = truncateDecimals(result);
+
             // Format numbers with proper decimal places
-            const formattedAmount = amount.toFixed(2);
-            const formattedRate = rate.toFixed(2);
-            const formattedResult = result.toFixed(2);
+            const formattedAmount = truncatedAmount.toFixed(2);
+            const formattedRate = truncatedRate.toFixed(2);
+            const formattedResult = truncatedResult.toFixed(2);
 
             // Show result with thousands separator
-            const resultWithSeparator = parseFloat(formattedResult).toLocaleString('es-VE', {
+            const resultWithSeparator = truncatedResult.toLocaleString('es-VE', {
                 minimumFractionDigits: 2,
                 maximumFractionDigits: 2
             });
