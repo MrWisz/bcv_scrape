@@ -1,9 +1,6 @@
 services:
   - type: web
     name: bcv-scraper-api
-    env: python
+    runtime: python
     buildCommand: pip install -r requirements.txt
     startCommand: gunicorn --bind 0.0.0.0:$PORT api:app
-    envVars:
-      - key: PYTHON_VERSION
-        value: 3.11.0
