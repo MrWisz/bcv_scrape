@@ -30,21 +30,23 @@ def scrape_exchange_rates():
         eur_xpath = '/html/body/div[4]/div/div[2]/div/div[1]/div[1]/section[1]/div/div[2]/div/div[3]/div/div/div[2]/strong'
         eur_element = tree.xpath(eur_xpath)
 
+        # Extract the date using XPath
+        date_xpath = '/html/body/div[4]/div/div[2]/div/div[1]/div[1]/section[1]/div/div[2]/div/div[8]/span'
+        date_element = tree.xpath(date_xpath)
+
         rates = {}
 
         if usd_element:
             usd_rate = usd_element[0].text_content().strip()
             rates['USD'] = usd_rate
-            print(f"USD: {usd_rate}")
-        else:
-            print("Could not find the USD rate element")
 
         if eur_element:
             eur_rate = eur_element[0].text_content().strip()
             rates['EUR'] = eur_rate
-            print(f"EUR: {eur_rate}")
-        else:
-            print("Could not find the EUR rate element")
+
+        if date_element:
+            date = date_element[0].text_content().strip()
+            rates['date'] = date
 
         return rates if rates else None
 
@@ -60,3 +62,4 @@ if __name__ == "__main__":
     if rates:
         print(f"USD: {rates.get('USD', 'N/A')}")
         print(f"EUR: {rates.get('EUR', 'N/A')}")
+        print(f"Date: {rates.get('date', 'N/A')}")

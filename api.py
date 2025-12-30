@@ -7,7 +7,7 @@ app = Flask(__name__)
 def get_rates():
     """
     Endpoint to get BCV exchange rates
-    Returns JSON with USD and EUR rates
+    Returns JSON with USD, EUR rates and the applicable date
     """
     rates = scrape_exchange_rates()
 
@@ -60,6 +60,24 @@ def get_eur_rate():
             'error': 'Failed to scrape EUR rate'
         }), 500
 
+@app.route('/rates/date', methods=['GET'])
+def get_date():
+    """
+    Endpoint to get the applicable date for the exchange rates
+    """
+    rates = scrape_exchange_rates()
+
+    if rates and 'date' in rates:
+        return jsonify({
+            'success': True,
+            'date': rates['date']
+        }), 200
+    else:
+        return jsonify({
+            'success': False,
+            'error': 'Failed to scrape date'
+        }), 500
+
 @app.route('/', methods=['GET'])
 def home():
     """
@@ -68,9 +86,10 @@ def home():
     return jsonify({
         'message': 'BCV Exchange Rate Scraper API',
         'endpoints': {
-            '/rates': 'Get all exchange rates (USD and EUR)',
+            '/rates': 'Get all exchange rates (USD, EUR, and date)',
             '/rates/usd': 'Get only USD rate',
-            '/rates/eur': 'Get only EUR rate'
+            '/rates/eur': 'Get only EUR rate',
+            '/rates/date': 'Get the applicable date for the rates'
         }
     }), 200
 
