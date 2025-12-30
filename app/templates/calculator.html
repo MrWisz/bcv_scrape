@@ -299,8 +299,12 @@
 
         // Display rates in UI
         function displayRates() {
-            document.getElementById('usd-rate').textContent = rates.USD + ' VES';
-            document.getElementById('eur-rate').textContent = rates.EUR + ' VES';
+            // Convert comma to dot for proper number parsing (BCV uses European format)
+            const usdRate = parseFloat(rates.USD.replace(',', '.')).toFixed(2);
+            const eurRate = parseFloat(rates.EUR.replace(',', '.')).toFixed(2);
+
+            document.getElementById('usd-rate').textContent = usdRate + ' VES';
+            document.getElementById('eur-rate').textContent = eurRate + ' VES';
             document.getElementById('date-rate').textContent = rates.date;
 
             // Show app
@@ -355,18 +359,28 @@
             // Hide error
             document.getElementById('error').classList.remove('show');
 
-            // Get rate
-            const rate = parseFloat(rates[currency]);
+            // Get rate and convert comma to dot (BCV uses European format)
+            const rate = parseFloat(rates[currency].replace(',', '.'));
             const result = amount * rate;
 
-            // Show result
-            document.getElementById('result-value').textContent = result.toFixed(2) + ' VES';
+            // Format numbers with proper decimal places
+            const formattedAmount = amount.toFixed(2);
+            const formattedRate = rate.toFixed(2);
+            const formattedResult = result.toFixed(2);
+
+            // Show result with thousands separator
+            const resultWithSeparator = parseFloat(formattedResult).toLocaleString('es-VE', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            });
+
+            document.getElementById('result-value').textContent = resultWithSeparator + ' VES';
             document.getElementById('result-detail').textContent =
-                `${amount.toFixed(2)} ${currency} × ${rate.toFixed(2)} = ${result.toFixed(2)} VES`;
+                `${formattedAmount} ${currency} × ${formattedRate} = ${resultWithSeparator} VES`;
             document.getElementById('result').classList.add('show');
 
             // Haptic feedback
-            if (tg.HapticFeedback) {
+            if (tg && tg.HapticFeedback) {
                 tg.HapticFeedback.notificationOccurred('success');
             }
         }
