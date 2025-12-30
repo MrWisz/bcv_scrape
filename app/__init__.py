@@ -16,9 +16,11 @@ def create_app():
     from app.routes.rates import rates_bp
     from app.routes.p2p import p2p_bp
     from app.routes.home import home_bp
+    from app.routes.calculator import calculator_bp
 
     app.register_blueprint(rates_bp)
     app.register_blueprint(p2p_bp)
     app.register_blueprint(home_bp)
+    app.register_blueprint(calculator_bp)
 
     return app
