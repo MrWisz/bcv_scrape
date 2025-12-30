@@ -9,3 +9,9 @@ ENV/
 .venv
 *.log
 .DS_Store
+.claude
+.claude_cache/
+.claude_sessions/
+.claude_workspace/
+settings.local.json
+local.json
