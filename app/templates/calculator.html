@@ -208,6 +208,11 @@
     </div>
 
     <script>
+        const CACHE_KEY = 'bcv_rates_cache';
+        const CACHE_DURATION = 4 * 60 * 60 * 1000; // 4 hours in milliseconds
+        const SCHEDULED_UPDATE_HOUR = 16; // 4 PM
+        const SCHEDULED_UPDATE_MINUTE = 30; // 4:30 PM Venezuela time
+
         let rates = {};
         let tg = window.Telegram.WebApp;
 
@@ -215,29 +220,127 @@
         tg.ready();
         tg.expand();
 
-        // Load exchange rates
-        async function loadRates() {
+        // Check if cache is valid
+        function getCachedRates() {
+            try {
+                const cached = localStorage.getItem(CACHE_KEY);
+                if (!cached) return null;
+
+                const { data, timestamp } = JSON.parse(cached);
+                const now = Date.now();
+
+                // Check if cache is still valid (less than 4 hours old)
+                if (now - timestamp < CACHE_DURATION) {
+                    console.log('Using cached rates');
+                    return data;
+                }
+
+                console.log('Cache expired');
+                return null;
+            } catch (error) {
+                console.error('Error reading cache:', error);
+                return null;
+            }
+        }
+
+        // Save rates to cache
+        function cacheRates(data) {
+            try {
+                const cacheData = {
+                    data: data,
+                    timestamp: Date.now()
+                };
+                localStorage.setItem(CACHE_KEY, JSON.stringify(cacheData));
+                console.log('Rates cached successfully');
+            } catch (error) {
+                console.error('Error caching rates:', error);
+            }
+        }
+
+        // Load exchange rates (from cache or API)
+        async function loadRates(forceRefresh = false) {
+            // Try to use cached data first
+            if (!forceRefresh) {
+                const cachedRates = getCachedRates();
+                if (cachedRates) {
+                    rates = cachedRates;
+                    displayRates();
+                    return;
+                }
+            }
+
+            // If no cache or force refresh, fetch from API
+            console.log('Fetching rates from API...');
             try {
                 const response = await fetch('/rates');
                 const data = await response.json();
 
                 if (data.success) {
                     rates = data.data;
-
-                    // Update UI
-                    document.getElementById('usd-rate').textContent = rates.USD + ' VES';
-                    document.getElementById('eur-rate').textContent = rates.EUR + ' VES';
-                    document.getElementById('date-rate').textContent = rates.date;
-
-                    // Show app
-                    document.getElementById('loading').style.display = 'none';
-                    document.getElementById('app').style.display = 'block';
+                    cacheRates(rates); // Save to cache
+                    displayRates();
                 } else {
-                    showError('Error al cargar las tasas de cambio');
+                    throw new Error('API returned unsuccessful response');
                 }
             } catch (error) {
-                showError('Error de conexión: ' + error.message);
+                console.error('Error:', error);
+
+                // Try to use cached data as fallback
+                const cachedRates = localStorage.getItem(CACHE_KEY);
+                if (cachedRates) {
+                    const { data } = JSON.parse(cachedRates);
+                    rates = data;
+                    displayRates();
+                } else {
+                    showError('Error de conexión: ' + error.message);
+                }
             }
+        }
+
+        // Display rates in UI
+        function displayRates() {
+            document.getElementById('usd-rate').textContent = rates.USD + ' VES';
+            document.getElementById('eur-rate').textContent = rates.EUR + ' VES';
+            document.getElementById('date-rate').textContent = rates.date;
+
+            // Show app
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('app').style.display = 'block';
+        }
+
+        // Schedule next update at 4:30 PM Venezuela time
+        function scheduleNextUpdate() {
+            const now = new Date();
+
+            // Convert to Venezuela time (UTC-4 / GMT-4)
+            const venezuelaTime = new Date(now.toLocaleString('en-US', { timeZone: 'America/Caracas' }));
+
+            // Calculate next 4:30 PM
+            const nextUpdate = new Date(venezuelaTime);
+            nextUpdate.setHours(SCHEDULED_UPDATE_HOUR, SCHEDULED_UPDATE_MINUTE, 0, 0);
+
+            // If it's already past 4:30 PM today, schedule for tomorrow
+            if (venezuelaTime >= nextUpdate) {
+                nextUpdate.setDate(nextUpdate.getDate() + 1);
+            }
+
+            const timeUntilUpdate = nextUpdate - venezuelaTime;
+            const minutesUntilUpdate = Math.round(timeUntilUpdate / 1000 / 60);
+
+            // Debug logs
+            console.log('=== Scheduled Update Info ===');
+            console.log('System time:', now.toLocaleString());
+            console.log('Venezuela time (GMT-4):', venezuelaTime.toLocaleString('es-VE', { timeZone: 'America/Caracas' }));
+            console.log('Next update at:', nextUpdate.toLocaleString('es-VE', { timeZone: 'America/Caracas' }));
+            console.log('Time until update:', minutesUntilUpdate, 'minutes');
+            console.log('============================');
+
+            // Schedule the update
+            setTimeout(() => {
+                console.log('⏰ Scheduled update triggered at 4:30 PM Venezuela time');
+                loadRates(true); // Force refresh
+                scheduleNextUpdate(); // Schedule next update
+            }, timeUntilUpdate);
         }
 
         function calculate() {
@@ -277,6 +380,7 @@
         // Auto-calculate on input change
         document.addEventListener('DOMContentLoaded', function() {
             loadRates();
+            scheduleNextUpdate(); // Schedule automatic updates at 4:30 PM
 
             document.getElementById('amount').addEventListener('input', function() {
                 if (this.value) {
