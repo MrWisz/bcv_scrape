@@ -4,6 +4,7 @@ Service for scraping exchange rates from Banco Central de Venezuela
 import requests
 from lxml import html
 import urllib3
+from app.services.rates_history import save_rate_to_history
 
 # Disable SSL warnings
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
@@ -53,7 +54,13 @@ def scrape_exchange_rates():
 
         if date_element:
             date = date_element[0].text_content().strip()
+            # Remove extra spaces (normalize multiple spaces to single space)
+            date = ' '.join(date.split())
             rates['date'] = date
+
+        # Save to history if we have all the data
+        if rates and 'USD' in rates and 'EUR' in rates and 'date' in rates:
+            save_rate_to_history(rates['date'], rates['USD'], rates['EUR'])
 
         return rates if rates else None
 
