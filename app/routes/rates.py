@@ -1,8 +1,9 @@
 """
 Routes for BCV exchange rate endpoints
 """
-from flask import Blueprint, jsonify
+from flask import Blueprint, jsonify, request
 from app.services.bcv_scraper import scrape_exchange_rates
+from app.services.rates_history import get_all_rates, get_rate_by_date, get_available_dates
 
 rates_bp = Blueprint('rates', __name__, url_prefix='/rates')
 
@@ -216,3 +217,131 @@ def get_date():
             'success': False,
             'error': 'Failed to scrape date'
         }), 500
+
+
+@rates_bp.route('/history', methods=['GET'])
+def get_history():
+    """
+    Get historical exchange rates
+    ---
+    tags:
+      - Exchange Rates
+    summary: Get all historical exchange rates
+    description: Retrieves all saved historical exchange rates from the database.
+    responses:
+      200:
+        description: Successfully retrieved history
+        schema:
+          type: object
+          properties:
+            success:
+              type: boolean
+              example: true
+            data:
+              type: object
+              description: Object with dates as keys and rate data as values
+    """
+    history = get_all_rates()
+
+    return jsonify({
+        'success': True,
+        'data': history
+    }), 200
+
+
+@rates_bp.route('/history/dates', methods=['GET'])
+def get_dates():
+    """
+    Get available dates in history
+    ---
+    tags:
+      - Exchange Rates
+    summary: Get list of available dates
+    description: Retrieves a list of all dates that have saved exchange rates.
+    responses:
+      200:
+        description: Successfully retrieved available dates
+        schema:
+          type: object
+          properties:
+            success:
+              type: boolean
+              example: true
+            dates:
+              type: array
+              items:
+                type: string
+              example: ["Lunes, 30 Diciembre 2025", "Viernes, 27 Diciembre 2025"]
+    """
+    dates = get_available_dates()
+
+    return jsonify({
+        'success': True,
+        'dates': dates
+    }), 200
+
+
+@rates_bp.route('/history/<date>', methods=['GET'])
+def get_historical_rate(date):
+    """
+    Get exchange rate for specific date
+    ---
+    tags:
+      - Exchange Rates
+    summary: Get rate for a specific date
+    description: Retrieves the exchange rate for a specific date from history.
+    parameters:
+      - name: date
+        in: path
+        required: true
+        type: string
+        description: The date to lookup (e.g. "Lunes, 30 Diciembre 2025")
+    responses:
+      200:
+        description: Successfully retrieved rate
+        schema:
+          type: object
+          properties:
+            success:
+              type: boolean
+              example: true
+            date:
+              type: string
+              example: "Lunes, 30 Diciembre 2025"
+            data:
+              type: object
+              properties:
+                USD:
+                  type: string
+                  example: "36,50"
+                EUR:
+                  type: string
+                  example: "39,75"
+      404:
+        description: No data found for this date
+        schema:
+          type: object
+          properties:
+            success:
+              type: boolean
+              example: false
+            error:
+              type: string
+              example: "No data found for this date"
+    """
+    rate_data = get_rate_by_date(date)
+
+    if rate_data:
+        return jsonify({
+            'success': True,
+            'date': date,
+            'data': {
+                'USD': rate_data['USD'],
+                'EUR': rate_data['EUR']
+            }
+        }), 200
+    else:
+        return jsonify({
+            'success': False,
+            'error': 'No data found for this date'
+        }), 404
