@@ -84,6 +84,8 @@ def get_binance_p2p_price(asset="USDT", fiat="VES", payment_methods=None, num_pr
         if all_prices:
             # Calculate and return the average
             average_price = sum(all_prices) / len(all_prices)
+            # Truncate to 3 decimal places
+            average_price = int(average_price * 1000) / 1000
             print(f"Successfully collected {len(all_prices)} prices from qualifying sellers")
             return average_price
 
