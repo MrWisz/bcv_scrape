@@ -3,7 +3,7 @@ Routes for BCV exchange rate endpoints
 """
 from flask import Blueprint, jsonify, request
 from app.services.bcv_scraper import scrape_exchange_rates
-from app.services.rates_history import get_all_rates, get_rate_by_date, get_available_dates
+from app.services.rates_history import get_all_rates, get_rate_by_date, get_available_dates, get_usd_percentage_change
 
 rates_bp = Blueprint('rates', __name__, url_prefix='/rates')
 
@@ -344,4 +344,75 @@ def get_historical_rate(date):
         return jsonify({
             'success': False,
             'error': 'No data found for this date'
+        }), 404
+
+
+@rates_bp.route('/usd/change', methods=['GET'])
+def get_usd_change():
+    """
+    Get USD percentage change from last saved day
+    ---
+    tags:
+      - Exchange Rates
+    summary: Get USD to VES percentage change
+    description: Calculates the percentage change of the USD to VES exchange rate compared to the previous saved day in history.
+    responses:
+      200:
+        description: Successfully calculated percentage change
+        schema:
+          type: object
+          properties:
+            success:
+              type: boolean
+              example: true
+            data:
+              type: object
+              properties:
+                previous_date:
+                  type: string
+                  example: "Martes, 30 Diciembre 2025"
+                  description: The previous date used for comparison
+                previous_rate:
+                  type: number
+                  example: 298.14
+                  description: USD rate on the previous date
+                current_date:
+                  type: string
+                  example: "Viernes, 02 Enero 2026"
+                  description: The most recent date
+                current_rate:
+                  type: number
+                  example: 301.37
+                  description: USD rate on the current date
+                percentage_change:
+                  type: number
+                  example: 1.083
+                  description: Percentage change (positive for increase, negative for decrease)
+                change_direction:
+                  type: string
+                  example: "increase"
+                  description: Direction of change (increase, decrease, or no change)
+      404:
+        description: Insufficient data to calculate change
+        schema:
+          type: object
+          properties:
+            success:
+              type: boolean
+              example: false
+            error:
+              type: string
+              example: "Insufficient data to calculate percentage change. Need at least 2 saved rates."
+    """
+    change_data = get_usd_percentage_change()
+
+    if change_data:
+        return jsonify({
+            'success': True,
+            'data': change_data
+        }), 200
+    else:
+        return jsonify({
+            'success': False,
+            'error': 'Insufficient data to calculate percentage change. Need at least 2 saved rates.'
         }), 404

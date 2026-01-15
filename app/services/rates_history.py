@@ -130,3 +130,62 @@ def get_available_dates():
     )
 
     return [item[0] for item in sorted_items]
+
+
+def get_usd_percentage_change():
+    """
+    Calculate the percentage change of USD rate from the last saved day
+
+    Returns:
+        dict: Contains previous_date, previous_rate, current_date, current_rate,
+              percentage_change, and change_direction, or None if insufficient data
+    """
+    history = load_history()
+
+    if len(history) < 2:
+        return None
+
+    # Sort by timestamp (most recent first)
+    sorted_items = sorted(
+        history.items(),
+        key=lambda x: x[1].get('timestamp', ''),
+        reverse=True
+    )
+
+    # Get the two most recent entries
+    current_date, current_data = sorted_items[0]
+    previous_date, previous_data = sorted_items[1]
+
+    # Extract USD rates and convert from string format "123,45" to float
+    current_usd_str = current_data.get('USD', '0')
+    previous_usd_str = previous_data.get('USD', '0')
+
+    # Remove commas and convert to float
+    current_usd = float(current_usd_str.replace(',', '.'))
+    previous_usd = float(previous_usd_str.replace(',', '.'))
+
+    # Calculate percentage change: ((current - previous) / previous) * 100
+    if previous_usd == 0:
+        return None
+
+    percentage_change = ((current_usd - previous_usd) / previous_usd) * 100
+
+    # Truncate to 3 decimal places (not rounded)
+    percentage_change = int(percentage_change * 1000) / 1000
+
+    # Determine direction
+    if percentage_change > 0:
+        change_direction = "increase"
+    elif percentage_change < 0:
+        change_direction = "decrease"
+    else:
+        change_direction = "no change"
+
+    return {
+        'previous_date': previous_date,
+        'previous_rate': previous_usd,
+        'current_date': current_date,
+        'current_rate': current_usd,
+        'percentage_change': percentage_change,
+        'change_direction': change_direction
+    }
