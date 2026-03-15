@@ -7,9 +7,23 @@ A Flask API that scrapes exchange rates from the Banco Central de Venezuela (BCV
 - Scrapes USD and EUR exchange rates from BCV official website
 - Fetches real-time USDT/VES prices from Binance P2P marketplace
 - Includes applicable date for exchange rates
-- Interactive Swagger/OpenAPI documentation
+- Historical rate storage and lookup
+- Interactive Swagger/OpenAPI documentation with API key support
 - REST API endpoints for easy integration
+- Telegram Web App calculator for USD/EUR to VES conversion
 - Deployable to Render
+
+## Authentication
+
+All endpoints require an `X-API-Key` header:
+
+```
+X-API-Key: your-api-key
+```
+
+Set the key as an environment variable named `API_KEY` on your server. Without a valid key, requests will receive a `401 Unauthorized` response.
+
+When using the Swagger UI at `/docs`, click the **Authorize** button at the top right and enter your key there.
 
 ## API Endpoints
 
@@ -18,9 +32,18 @@ A Flask API that scrapes exchange rates from the Banco Central de Venezuela (BCV
 - `GET /rates/usd` - Get only USD rate
 - `GET /rates/eur` - Get only EUR rate
 - `GET /rates/date` - Get the applicable date for the rates
+- `GET /rates/usd/change` - Get USD percentage change vs previous saved day
+
+### Historical Rates
+- `GET /rates/history` - Get all historical exchange rates
+- `GET /rates/history/dates` - Get list of available dates
+- `GET /rates/history/<date>` - Get rates for a specific date
 
 ### P2P Cryptocurrency Prices
 - `GET /p2p/usdt` - Get Binance P2P USDT/VES buy price
+
+### Web App
+- `GET /calculator` - Telegram Web App currency calculator (USD/EUR to VES)
 
 ### Documentation
 - `GET /` - API information and available endpoints
@@ -34,12 +57,17 @@ A Flask API that scrapes exchange rates from the Banco Central de Venezuela (BCV
 pip install -r requirements.txt
 ```
 
-2. Run the API:
+2. Create a `.env` file in the project root:
+```
+API_KEY=your-secret-api-key
+```
+
+3. Run the API:
 ```bash
 python api.py
 ```
 
-3. Access at `http://localhost:5000`
+4. Access at `http://localhost:5000`
 
 ## Deployment to Render
 
@@ -47,7 +75,8 @@ python api.py
 2. Connect your GitHub account to Render
 3. Create a new Web Service
 4. Select this repository
-5. Render will automatically detect the `render.yaml` and deploy
+5. Add `API_KEY` as an environment variable in the Render dashboard
+6. Render will automatically detect the `render.yaml` and deploy
 
 ## Response Examples
 
@@ -56,9 +85,9 @@ python api.py
 {
   "success": true,
   "data": {
-    "USD": 36.50,
-    "EUR": 39.75,
-    "date": "2025-12-30"
+    "USD": "36,50",
+    "EUR": "39,75",
+    "date": "Lunes, 30 Diciembre 2025"
   }
 }
 ```
@@ -68,7 +97,7 @@ python api.py
 {
   "success": true,
   "currency": "USD",
-  "rate": 36.50
+  "rate": "36,50"
 }
 ```
 
@@ -77,7 +106,7 @@ python api.py
 {
   "success": true,
   "currency": "EUR",
-  "rate": 39.75
+  "rate": "39,75"
 }
 ```
 
@@ -85,7 +114,42 @@ python api.py
 ```json
 {
   "success": true,
-  "date": "2025-12-30"
+  "date": "Lunes, 30 Diciembre 2025"
+}
+```
+
+### GET /rates/usd/change
+```json
+{
+  "success": true,
+  "data": {
+    "previous_date": "Viernes, 27 Diciembre 2025",
+    "previous_rate": 36.25,
+    "current_date": "Lunes, 30 Diciembre 2025",
+    "current_rate": 36.50,
+    "percentage_change": 0.689,
+    "change_direction": "increase"
+  }
+}
+```
+
+### GET /rates/history/dates
+```json
+{
+  "success": true,
+  "dates": ["Lunes, 30 Diciembre 2025", "Viernes, 27 Diciembre 2025"]
+}
+```
+
+### GET /rates/history/Lunes, 30 Diciembre 2025
+```json
+{
+  "success": true,
+  "date": "Lunes, 30 Diciembre 2025",
+  "data": {
+    "USD": "36,50",
+    "EUR": "39,75"
+  }
 }
 ```
 
@@ -102,11 +166,12 @@ python api.py
 
 ## Interactive Documentation
 
-Once the API is running, you can access the interactive Swagger documentation at:
+Once the API is running, access the interactive Swagger documentation at:
 - Local: `http://localhost:5000/docs`
 - Production: `https://your-app-name.onrender.com/docs`
 
 The Swagger UI allows you to:
+- Authenticate using the **Authorize** button (enter your `API_KEY`)
 - Browse all endpoints with detailed descriptions
 - See request/response schemas with examples
 - Test the API directly from your browser
