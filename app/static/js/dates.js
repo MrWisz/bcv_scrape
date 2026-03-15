@@ -3,6 +3,7 @@
  */
 
 import { bcvDateToISO, showError, hideError, formatDateDDMMYYYY } from './utils.js';
+import { apiFetch } from './api.js';
 
 let availableDates = []; // Array of BCV formatted dates
 let dateMapping = {}; // Map: ISO date -> BCV formatted date
@@ -14,7 +15,7 @@ let selectedDate = null;
  */
 export async function loadAvailableDates(onDateLoaded) {
     try {
-        const response = await fetch('/rates/history/dates');
+        const response = await apiFetch('/rates/history/dates');
         const data = await response.json();
 
         if (data.success && data.dates && data.dates.length > 0) {

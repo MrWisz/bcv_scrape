@@ -4,6 +4,7 @@
 
 import { truncateDecimals, showError } from './utils.js';
 import { getCachedRates, cacheRates } from './cache.js';
+import { apiFetch } from './api.js';
 
 const SCHEDULED_UPDATE_HOUR = 16; // 4 PM
 const SCHEDULED_UPDATE_MINUTE = 30; // 4:30 PM Venezuela time
@@ -28,7 +29,7 @@ export async function loadRates(forceRefresh = false) {
     // If no cache or force refresh, fetch from API
     console.log('Fetching rates from API...');
     try {
-        const response = await fetch('/rates');
+        const response = await apiFetch('/rates');
         const data = await response.json();
 
         if (data.success) {
@@ -60,7 +61,7 @@ export async function loadRatesByDate(date) {
     try {
         // URL encode the date
         const encodedDate = encodeURIComponent(date);
-        const response = await fetch(`/rates/history/${encodedDate}`);
+        const response = await apiFetch(`/rates/history/${encodedDate}`);
         const data = await response.json();
 
         if (data.success) {
