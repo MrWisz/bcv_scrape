@@ -19,6 +19,8 @@ def get_usdt_p2p():
     ---
     tags:
       - P2P Prices
+    security:
+      - ApiKeyAuth: []
     summary: Get Binance P2P USDT/VES buy price
     description: Retrieves the current best buy price for USDT in VES from Binance P2P marketplace. This represents the price at which sellers are offering USDT.
     responses:

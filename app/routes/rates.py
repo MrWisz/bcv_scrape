@@ -20,6 +20,8 @@ def get_rates():
     ---
     tags:
       - Exchange Rates
+    security:
+      - ApiKeyAuth: []
     summary: Get all exchange rates (USD, EUR, and date)
     description: Retrieves the official exchange rates from Banco Central de Venezuela (BCV) for USD and EUR, along with the applicable date.
     responses:
@@ -81,6 +83,8 @@ def get_usd_rate():
     ---
     tags:
       - Exchange Rates
+    security:
+      - ApiKeyAuth: []
     summary: Get only USD exchange rate
     description: Retrieves the official USD to VES exchange rate from Banco Central de Venezuela (BCV).
     responses:
@@ -135,6 +139,8 @@ def get_eur_rate():
     ---
     tags:
       - Exchange Rates
+    security:
+      - ApiKeyAuth: []
     summary: Get only EUR exchange rate
     description: Retrieves the official EUR to VES exchange rate from Banco Central de Venezuela (BCV).
     responses:
@@ -189,6 +195,8 @@ def get_date():
     ---
     tags:
       - Exchange Rates
+    security:
+      - ApiKeyAuth: []
     summary: Get the applicable date for the exchange rates
     description: Retrieves the date when the BCV exchange rates were published or are applicable.
     responses:
@@ -239,6 +247,8 @@ def get_history():
     ---
     tags:
       - Exchange Rates
+    security:
+      - ApiKeyAuth: []
     summary: Get all historical exchange rates
     description: Retrieves all saved historical exchange rates from the database.
     responses:
@@ -271,6 +281,8 @@ def get_dates():
     ---
     tags:
       - Exchange Rates
+    security:
+      - ApiKeyAuth: []
     summary: Get list of available dates
     description: Retrieves a list of all dates that have saved exchange rates.
     responses:
@@ -305,6 +317,8 @@ def get_historical_rate(date):
     ---
     tags:
       - Exchange Rates
+    security:
+      - ApiKeyAuth: []
     summary: Get rate for a specific date
     description: Retrieves the exchange rate for a specific date from history.
     parameters:
@@ -373,6 +387,8 @@ def get_usd_change():
     ---
     tags:
       - Exchange Rates
+    security:
+      - ApiKeyAuth: []
     summary: Get USD to VES percentage change
     description: Calculates the percentage change of the USD to VES exchange rate compared to the previous saved day in history.
     responses:

@@ -18,6 +18,8 @@ def home():
     ---
     tags:
       - General
+    security:
+      - ApiKeyAuth: []
     summary: API information and available endpoints
     description: Returns basic information about the API and a list of available endpoints. For interactive documentation, visit /docs
     responses:

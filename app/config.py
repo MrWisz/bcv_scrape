@@ -34,6 +34,13 @@ swagger_template = {
         }
     },
     "schemes": ["https", "http"],
+    "securityDefinitions": {
+        "ApiKeyAuth": {
+            "type": "apiKey",
+            "in": "header",
+            "name": "X-API-Key"
+        }
+    },
     "tags": [
         {
             "name": "Exchange Rates",
