@@ -2,11 +2,16 @@
 Routes for general API information
 """
 from flask import Blueprint, jsonify
+from app.extensions import limiter
+from app.config import RATE_LIMIT_HEALTH
+from app.auth import require_api_key
 
 home_bp = Blueprint('home', __name__)
 
 
 @home_bp.route('/', methods=['GET'])
+@limiter.limit(RATE_LIMIT_HEALTH)
+@require_api_key
 def home():
     """
     API Home

@@ -3,11 +3,16 @@ Routes for Binance P2P cryptocurrency price endpoints
 """
 from flask import Blueprint, jsonify
 from app.services.binance_p2p import get_binance_p2p_price
+from app.extensions import limiter
+from app.config import RATE_LIMIT_P2P
+from app.auth import require_api_key
 
 p2p_bp = Blueprint('p2p', __name__, url_prefix='/p2p')
 
 
 @p2p_bp.route('/usdt', methods=['GET'])
+@limiter.limit(RATE_LIMIT_P2P)
+@require_api_key
 def get_usdt_p2p():
     """
     Get Binance P2P USDT/VES price

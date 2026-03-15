@@ -1,6 +1,7 @@
 from flask import Flask
 from flasgger import Swagger
 from app.config import swagger_config, swagger_template
+from app.extensions import limiter
 
 
 def create_app():
@@ -8,6 +9,9 @@ def create_app():
     Application factory pattern
     """
     app = Flask(__name__)
+
+    # Initialize extensions
+    limiter.init_app(app)
 
     # Initialize Swagger
     Swagger(app, config=swagger_config, template=swagger_template)

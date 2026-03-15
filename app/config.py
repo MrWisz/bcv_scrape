@@ -1,6 +1,12 @@
 """
-Configuration for Swagger/OpenAPI documentation
+Configuration for Swagger/OpenAPI documentation and rate limiting
 """
+
+# Rate limits per endpoint group
+RATE_LIMIT_SCRAPE = "30 per minute"    # endpoints that hit BCV website
+RATE_LIMIT_P2P = "20 per minute"       # endpoints that hit Binance P2P
+RATE_LIMIT_HISTORY = "60 per minute"   # endpoints that read local history file
+RATE_LIMIT_HEALTH = "120 per minute"   # health/home endpoints
 
 swagger_config = {
     "headers": [],

@@ -3,3 +3,4 @@ lxml
 flask
 gunicorn
 flasgger
+flask-limiter

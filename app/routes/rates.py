@@ -4,11 +4,16 @@ Routes for BCV exchange rate endpoints
 from flask import Blueprint, jsonify, request
 from app.services.bcv_scraper import scrape_exchange_rates
 from app.services.rates_history import get_all_rates, get_rate_by_date, get_available_dates, get_usd_percentage_change
+from app.extensions import limiter
+from app.config import RATE_LIMIT_SCRAPE, RATE_LIMIT_HISTORY
+from app.auth import require_api_key
 
 rates_bp = Blueprint('rates', __name__, url_prefix='/rates')
 
 
 @rates_bp.route('/', methods=['GET'])
+@limiter.limit(RATE_LIMIT_SCRAPE)
+@require_api_key
 def get_rates():
     """
     Get all BCV exchange rates
@@ -68,6 +73,8 @@ def get_rates():
 
 
 @rates_bp.route('/usd', methods=['GET'])
+@limiter.limit(RATE_LIMIT_SCRAPE)
+@require_api_key
 def get_usd_rate():
     """
     Get USD exchange rate
@@ -120,6 +127,8 @@ def get_usd_rate():
 
 
 @rates_bp.route('/eur', methods=['GET'])
+@limiter.limit(RATE_LIMIT_SCRAPE)
+@require_api_key
 def get_eur_rate():
     """
     Get EUR exchange rate
@@ -172,6 +181,8 @@ def get_eur_rate():
 
 
 @rates_bp.route('/date', methods=['GET'])
+@limiter.limit(RATE_LIMIT_SCRAPE)
+@require_api_key
 def get_date():
     """
     Get exchange rates date
@@ -220,6 +231,8 @@ def get_date():
 
 
 @rates_bp.route('/history', methods=['GET'])
+@limiter.limit(RATE_LIMIT_HISTORY)
+@require_api_key
 def get_history():
     """
     Get historical exchange rates
@@ -250,6 +263,8 @@ def get_history():
 
 
 @rates_bp.route('/history/dates', methods=['GET'])
+@limiter.limit(RATE_LIMIT_HISTORY)
+@require_api_key
 def get_dates():
     """
     Get available dates in history
@@ -282,6 +297,8 @@ def get_dates():
 
 
 @rates_bp.route('/history/<date>', methods=['GET'])
+@limiter.limit(RATE_LIMIT_HISTORY)
+@require_api_key
 def get_historical_rate(date):
     """
     Get exchange rate for specific date
@@ -348,6 +365,8 @@ def get_historical_rate(date):
 
 
 @rates_bp.route('/usd/change', methods=['GET'])
+@limiter.limit(RATE_LIMIT_HISTORY)
+@require_api_key
 def get_usd_change():
     """
     Get USD percentage change from last saved day
