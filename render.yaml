@@ -6,3 +6,10 @@ services:
     plan: free
     buildCommand: pip install -r requirements.txt
     startCommand: gunicorn api:app
+    envVars:
+      - key: API_KEY
+        sync: false
+      - key: MONGODB_URI
+        sync: false
+      - key: MONGODB_DB_NAME
+        value: bcv_scrape

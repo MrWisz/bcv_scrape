@@ -4,3 +4,6 @@ flask
 gunicorn
 flasgger
 flask-limiter
+pymongo
+dnspython
+python-dotenv

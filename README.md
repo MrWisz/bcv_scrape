@@ -7,15 +7,15 @@ A Flask API that scrapes exchange rates from the Banco Central de Venezuela (BCV
 - Scrapes USD and EUR exchange rates from BCV official website
 - Fetches real-time USDT/VES prices from Binance P2P marketplace
 - Includes applicable date for exchange rates
-- Historical rate storage and lookup
+- Historical rate storage and lookup (MongoDB Atlas)
 - Interactive Swagger/OpenAPI documentation with API key support
 - REST API endpoints for easy integration
-- Telegram Web App calculator for USD/EUR to VES conversion
+- Web App calculator for USD/EUR to VES conversion
 - Deployable to Render
 
 ## Authentication
 
-All endpoints require an `X-API-Key` header:
+All endpoints require an `X-API-Key` header (except for the health endpoint):
 
 ```
 X-API-Key: your-api-key
@@ -60,6 +60,8 @@ pip install -r requirements.txt
 2. Create a `.env` file in the project root:
 ```
 API_KEY=your-secret-api-key
+MONGODB_URI=your-mongodb-atlas-connection-string
+MONGODB_DB_NAME=bcv_scrape
 ```
 
 3. Run the API:
@@ -69,13 +71,22 @@ python api.py
 
 4. Access at `http://localhost:5000`
 
+## Historical Data Storage
+
+Historical rates are stored in a MongoDB Atlas collection (`rates_history` in the `bcv_scrape` database) instead of a local JSON file. Set `MONGODB_URI` to your Atlas cluster's connection string (Atlas dashboard → Database → Connect → Drivers).
+
+If you have existing data in `rates_history.json`, import it once with:
+```bash
+python migrate_to_mongodb.py
+```
+
 ## Deployment to Render
 
 1. Push this code to a GitHub repository
 2. Connect your GitHub account to Render
 3. Create a new Web Service
 4. Select this repository
-5. Add `API_KEY` as an environment variable in the Render dashboard
+5. Add `API_KEY` and `MONGODB_URI` as environment variables in the Render dashboard
 6. Render will automatically detect the `render.yaml` and deploy
 
 ## Response Examples
@@ -169,6 +180,7 @@ python api.py
 Once the API is running, access the interactive Swagger documentation at:
 - Local: `http://localhost:5000/docs`
 - Production: `https://your-app-name.onrender.com/docs`
+(Or whatever deployment server you decide to use)
 
 The Swagger UI allows you to:
 - Authenticate using the **Authorize** button (enter your `API_KEY`)

@@ -1,39 +1,24 @@
 """
-Service for managing historical exchange rates
+Service for managing historical exchange rates (MongoDB-backed)
 """
-import json
-import os
 from datetime import datetime
+from app.db import get_db
+
+COLLECTION_NAME = 'rates_history'
 
 
-HISTORY_FILE = 'rates_history.json'
+def get_collection():
+    """Get the MongoDB collection storing rate history"""
+    return get_db()[COLLECTION_NAME]
 
 
-def get_history_file_path():
-    """Get the absolute path to the history file"""
-    # Store in the root directory of the project
-    base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-    return os.path.join(base_dir, HISTORY_FILE)
-
-
-def load_history():
-    """
-    Load rates history from JSON file
-
-    Returns:
-        dict: Dictionary with dates as keys and rates as values
-    """
-    file_path = get_history_file_path()
-
-    if not os.path.exists(file_path):
-        return {}
-
-    try:
-        with open(file_path, 'r', encoding='utf-8') as f:
-            return json.load(f)
-    except Exception as e:
-        print(f"Error loading history: {e}")
-        return {}
+def _to_entry(doc):
+    """Strip the Mongo _id and shape a document like the old JSON value"""
+    return {
+        'USD': doc['USD'],
+        'EUR': doc['EUR'],
+        'timestamp': doc['timestamp']
+    }
 
 
 def save_rate_to_history(date, usd, eur):
@@ -45,20 +30,17 @@ def save_rate_to_history(date, usd, eur):
         usd (str): USD rate
         eur (str): EUR rate
     """
-    history = load_history()
-
-    # Use the date as key
-    history[date] = {
-        'USD': usd,
-        'EUR': eur,
-        'timestamp': datetime.now().isoformat()
-    }
-
-    file_path = get_history_file_path()
-
     try:
-        with open(file_path, 'w', encoding='utf-8') as f:
-            json.dump(history, f, ensure_ascii=False, indent=2)
+        collection = get_collection()
+        collection.update_one(
+            {'date': date},
+            {'$set': {
+                'USD': usd,
+                'EUR': eur,
+                'timestamp': datetime.now().isoformat()
+            }},
+            upsert=True
+        )
         print(f"Rate saved to history: {date}")
     except Exception as e:
         print(f"Error saving to history: {e}")
@@ -71,7 +53,8 @@ def get_all_rates():
     Returns:
         dict: All rates with dates as keys
     """
-    return load_history()
+    collection = get_collection()
+    return {doc['date']: _to_entry(doc) for doc in collection.find()}
 
 
 def get_rate_by_date(date):
@@ -84,8 +67,9 @@ def get_rate_by_date(date):
     Returns:
         dict: Rate data for that date or None
     """
-    history = load_history()
-    return history.get(date)
+    collection = get_collection()
+    doc = collection.find_one({'date': date})
+    return _to_entry(doc) if doc else None
 
 
 def get_latest_rate():
@@ -95,22 +79,13 @@ def get_latest_rate():
     Returns:
         tuple: (date, rate_data) or (None, None)
     """
-    history = load_history()
+    collection = get_collection()
+    doc = collection.find_one(sort=[('timestamp', -1)])
 
-    if not history:
+    if not doc:
         return None, None
 
-    # Sort by timestamp (most recent first)
-    sorted_dates = sorted(
-        history.items(),
-        key=lambda x: x[1].get('timestamp', ''),
-        reverse=True
-    )
-
-    if sorted_dates:
-        return sorted_dates[0]
-
-    return None, None
+    return doc['date'], _to_entry(doc)
 
 
 def get_available_dates():
@@ -120,16 +95,8 @@ def get_available_dates():
     Returns:
         list: List of date strings sorted by most recent first
     """
-    history = load_history()
-
-    # Sort by timestamp (most recent first)
-    sorted_items = sorted(
-        history.items(),
-        key=lambda x: x[1].get('timestamp', ''),
-        reverse=True
-    )
-
-    return [item[0] for item in sorted_items]
+    collection = get_collection()
+    return [doc['date'] for doc in collection.find(sort=[('timestamp', -1)])]
 
 
 def get_usd_percentage_change():
@@ -140,29 +107,18 @@ def get_usd_percentage_change():
         dict: Contains previous_date, previous_rate, current_date, current_rate,
               percentage_change, and change_direction, or None if insufficient data
     """
-    history = load_history()
+    collection = get_collection()
+    docs = list(collection.find(sort=[('timestamp', -1)], limit=2))
 
-    if len(history) < 2:
+    if len(docs) < 2:
         return None
 
-    # Sort by timestamp (most recent first)
-    sorted_items = sorted(
-        history.items(),
-        key=lambda x: x[1].get('timestamp', ''),
-        reverse=True
-    )
-
-    # Get the two most recent entries
-    current_date, current_data = sorted_items[0]
-    previous_date, previous_data = sorted_items[1]
-
-    # Extract USD rates and convert from string format "123,45" to float
-    current_usd_str = current_data.get('USD', '0')
-    previous_usd_str = previous_data.get('USD', '0')
+    current_data, previous_data = docs[0], docs[1]
+    current_date, previous_date = current_data['date'], previous_data['date']
 
     # Remove commas and convert to float
-    current_usd = float(current_usd_str.replace(',', '.'))
-    previous_usd = float(previous_usd_str.replace(',', '.'))
+    current_usd = float(current_data['USD'].replace(',', '.'))
+    previous_usd = float(previous_data['USD'].replace(',', '.'))
 
     # Calculate percentage change: ((current - previous) / previous) * 100
     if previous_usd == 0:
