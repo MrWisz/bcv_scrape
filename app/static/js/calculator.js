@@ -3,7 +3,7 @@
  */
 
 import { truncateDecimals, showError, hideError } from './utils.js';
-import { getRates } from './rates.js';
+import { getRates, getBinanceRate } from './rates.js';
 
 let tg = null;
 
@@ -31,10 +31,21 @@ export function calculate() {
     // Hide error
     hideError();
 
-    const rates = getRates();
+    let rate;
 
-    // Get rate and convert comma to dot (BCV uses European format)
-    const rate = parseFloat(rates[currency].replace(',', '.'));
+    if (currency === 'USDT') {
+        rate = getBinanceRate();
+
+        if (rate === null || rate === undefined) {
+            showError('La tasa de Binance P2P aún no está disponible');
+            return;
+        }
+    } else {
+        const rates = getRates();
+        // Convert comma to dot (BCV uses European format)
+        rate = parseFloat(rates[currency].replace(',', '.'));
+    }
+
     const result = amount * rate;
 
     // Truncate to 2 decimals without rounding

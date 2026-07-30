@@ -3,7 +3,7 @@
  */
 
 import { initTelegram, calculate, setupEventListeners } from './calculator.js';
-import { loadRatesByDate, scheduleNextUpdate } from './rates.js';
+import { loadRatesByDate, scheduleNextUpdate, loadBinanceRate } from './rates.js';
 import { loadAvailableDates, onDateChange } from './dates.js';
 
 // Initialize Telegram WebApp
@@ -18,6 +18,9 @@ document.addEventListener('DOMContentLoaded', function() {
     loadAvailableDates((mostRecentDate) => {
         loadRatesByDate(mostRecentDate);
     });
+
+    // Load the live Binance P2P rate (independent of the selected history date)
+    loadBinanceRate();
 
     // Schedule automatic updates at 4:30 PM
     scheduleNextUpdate();

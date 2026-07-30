@@ -10,6 +10,7 @@ const SCHEDULED_UPDATE_HOUR = 16; // 4 PM
 const SCHEDULED_UPDATE_MINUTE = 30; // 4:30 PM Venezuela time
 
 let rates = {};
+let binanceRate = null;
 
 /**
  * Load exchange rates (from cache or API)
@@ -102,6 +103,32 @@ function displayRates() {
 }
 
 /**
+ * Load the current Binance P2P USDT/VES rate (live, not tied to a history date)
+ */
+export async function loadBinanceRate() {
+    try {
+        const response = await apiFetch('/p2p/usdt');
+        const data = await response.json();
+
+        if (data.success) {
+            binanceRate = data.price;
+            document.getElementById('binance-rate').textContent =
+                truncateDecimals(binanceRate).toFixed(2) + ' VES';
+        }
+    } catch (error) {
+        console.error('Error loading Binance P2P rate:', error);
+    }
+}
+
+/**
+ * Get the current Binance P2P rate
+ * @returns {number|null} Current USDT/VES rate, or null if not loaded yet
+ */
+export function getBinanceRate() {
+    return binanceRate;
+}
+
+/**
  * Schedule next update at 4:30 PM Venezuela time
  */
 export function scheduleNextUpdate() {
@@ -134,6 +161,7 @@ export function scheduleNextUpdate() {
     setTimeout(() => {
         console.log('Scheduled update triggered at 4:30 PM Venezuela time');
         loadRates(true); // Force refresh
+        loadBinanceRate();
         scheduleNextUpdate(); // Schedule next update
     }, timeUntilUpdate);
 }
