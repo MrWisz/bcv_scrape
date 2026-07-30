@@ -5,18 +5,29 @@ import requests
 from lxml import html
 import urllib3
 from app.services.rates_history import save_rate_to_history
+from app.services.ttl_cache import TTLCache
 
 # Disable SSL warnings
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
+# BCV only publishes new rates once a day; matches the external refresh cadence
+_CACHE_TTL_SECONDS = 24 * 60 * 60
+_cache = TTLCache(ttl_seconds=_CACHE_TTL_SECONDS)
+_CACHE_KEY = 'bcv_rates'
+
 
 def scrape_exchange_rates():
     """
-    Scrapes exchange rates from Banco Central de Venezuela website
+    Scrapes exchange rates from Banco Central de Venezuela website.
+    Cached for 24 hours to avoid re-scraping bcv.org.ve on every request.
 
     Returns:
         dict: Dictionary containing USD, EUR rates and date, or None if failed
     """
+    cached_rates, is_fresh = _cache.get(_CACHE_KEY)
+    if is_fresh:
+        return cached_rates
+
     url = "https://www.bcv.org.ve/"
 
     try:
@@ -61,12 +72,15 @@ def scrape_exchange_rates():
         # Save to history if we have all the data
         if rates and 'USD' in rates and 'EUR' in rates and 'date' in rates:
             save_rate_to_history(rates['date'], rates['USD'], rates['EUR'])
+            _cache.set(_CACHE_KEY, rates)
+            return rates
 
-        return rates if rates else None
+        # Incomplete scrape - fall back to stale cache rather than failing outright
+        return cached_rates
 
     except requests.exceptions.RequestException as e:
         print(f"Error fetching the webpage: {e}")
-        return None
+        return cached_rates
     except Exception as e:
         print(f"An error occurred: {e}")
-        return None
+        return cached_rates

@@ -2,11 +2,18 @@
 Service for fetching cryptocurrency prices from Binance P2P
 """
 import requests
+from app.services.ttl_cache import TTLCache
+
+# Matches the external refresh cadence for the Binance P2P rate
+_CACHE_TTL_SECONDS = 8 * 60 * 60
+_cache = TTLCache(ttl_seconds=_CACHE_TTL_SECONDS)
 
 
 def get_binance_p2p_price(asset="USDT", fiat="VES", payment_methods=None, num_prices=50, min_trades=1000, min_completion_rate=98.0):
     """
-    Fetches the average buy price from Binance P2P marketplace
+    Fetches the average buy price from Binance P2P marketplace.
+    Cached for 8 hours (per parameter combination) to avoid hitting
+    Binance's P2P search API on every request.
 
     Args:
         asset (str): The cryptocurrency asset (default: USDT)
@@ -19,6 +26,11 @@ def get_binance_p2p_price(asset="USDT", fiat="VES", payment_methods=None, num_pr
     Returns:
         float: The average buy price, or None if failed
     """
+    cache_key = (asset, fiat, tuple(payment_methods or []), num_prices, min_trades, min_completion_rate)
+    cached_price, is_fresh = _cache.get(cache_key)
+    if is_fresh:
+        return cached_price
+
     url = "https://p2p.binance.com/bapi/c2c/v2/friendly/c2c/adv/search"
 
     headers = {
@@ -87,14 +99,15 @@ def get_binance_p2p_price(asset="USDT", fiat="VES", payment_methods=None, num_pr
             # Truncate to 3 decimal places
             average_price = int(average_price * 1000) / 1000
             print(f"Successfully collected {len(all_prices)} prices from qualifying sellers")
+            _cache.set(cache_key, average_price)
             return average_price
 
         print(f"No qualifying sellers found with criteria: {min_trades}+ trades, {min_completion_rate}%+ completion rate")
-        return None
+        return cached_price
 
     except requests.exceptions.RequestException as e:
         print(f"Error fetching Binance P2P price: {e}")
-        return None
+        return cached_price
     except Exception as e:
         print(f"An error occurred: {e}")
-        return None
+        return cached_price

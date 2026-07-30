@@ -103,6 +103,25 @@ function displayRates() {
 }
 
 /**
+ * Apply rates from cache (or elsewhere), skipping the network call
+ * @param {Object} cachedRates - { USD, EUR, date }
+ */
+export function applyRates(cachedRates) {
+    rates = cachedRates;
+    displayRates();
+}
+
+/**
+ * Apply a Binance rate from cache (or elsewhere), skipping the network call
+ * @param {number} rate - USDT/VES rate
+ */
+export function applyBinanceRate(rate) {
+    binanceRate = rate;
+    document.getElementById('binance-rate').textContent =
+        truncateDecimals(binanceRate).toFixed(2) + ' VES';
+}
+
+/**
  * Load the current Binance P2P USDT/VES rate (live, not tied to a history date)
  */
 export async function loadBinanceRate() {

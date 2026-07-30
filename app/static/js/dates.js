@@ -19,52 +19,67 @@ export async function loadAvailableDates(onDateLoaded) {
         const data = await response.json();
 
         if (data.success && data.dates && data.dates.length > 0) {
-            availableDates = data.dates;
-
-            // Create mapping from ISO to BCV format
-            availableDates.forEach(bcvDate => {
-                const isoDate = bcvDateToISO(bcvDate);
-                if (isoDate) {
-                    dateMapping[isoDate] = bcvDate;
-                }
-            });
-
-            // Set date range limits
-            const isoDatesList = Object.keys(dateMapping).sort();
-            const dateInput = document.getElementById('date-select');
-
-            if (isoDatesList.length > 0) {
-                // Set min and max dates
-                dateInput.min = isoDatesList[0];
-                dateInput.max = isoDatesList[isoDatesList.length - 1];
-
-                // Set most recent date as default
-                const mostRecent = isoDatesList[isoDatesList.length - 1];
-                dateInput.value = mostRecent;
-                selectedDate = dateMapping[mostRecent];
-
-                // Display selected date in DD/MM/YYYY format
-                document.getElementById('date-display').value = formatDateDDMMYYYY(mostRecent);
-
-                // Update info text with available dates count
-                document.getElementById('date-info').textContent =
-                    `${isoDatesList.length} fecha(s) con datos disponibles`;
-
-                // Setup click handler to open native date picker
-                document.getElementById('date-display').addEventListener('click', () => {
-                    document.getElementById('date-select').showPicker();
-                });
-
-                // Call callback with the most recent date
-                if (onDateLoaded) {
-                    onDateLoaded(selectedDate);
-                }
-            }
+            applyAvailableDates(data.dates, onDateLoaded);
         }
     } catch (error) {
         console.error('Error loading dates:', error);
         document.getElementById('date-info').textContent = 'Error al cargar fechas';
     }
+}
+
+/**
+ * Apply a list of available dates (from the API or from cache) to app
+ * state and the DOM, without performing a network request.
+ * @param {string[]} dates - BCV-formatted date strings
+ * @param {Function} onDateLoaded - Callback invoked with the most recent date
+ */
+export function applyAvailableDates(dates, onDateLoaded) {
+    availableDates = dates;
+    dateMapping = {};
+
+    // Create mapping from ISO to BCV format
+    availableDates.forEach(bcvDate => {
+        const isoDate = bcvDateToISO(bcvDate);
+        if (isoDate) {
+            dateMapping[isoDate] = bcvDate;
+        }
+    });
+
+    // Set date range limits
+    const isoDatesList = Object.keys(dateMapping).sort();
+    const dateInput = document.getElementById('date-select');
+
+    if (isoDatesList.length > 0) {
+        // Set min and max dates
+        dateInput.min = isoDatesList[0];
+        dateInput.max = isoDatesList[isoDatesList.length - 1];
+
+        // Set most recent date as default
+        const mostRecent = isoDatesList[isoDatesList.length - 1];
+        dateInput.value = mostRecent;
+        selectedDate = dateMapping[mostRecent];
+
+        // Display selected date in DD/MM/YYYY format
+        document.getElementById('date-display').value = formatDateDDMMYYYY(mostRecent);
+
+        // Update info text with available dates count
+        document.getElementById('date-info').textContent =
+            `${isoDatesList.length} fecha(s) con datos disponibles`;
+
+        // Setup click handler to open native date picker
+        document.getElementById('date-display').addEventListener('click', () => {
+            document.getElementById('date-select').showPicker();
+        });
+
+        // Call callback with the most recent date
+        if (onDateLoaded) {
+            onDateLoaded(selectedDate);
+        }
+    }
+}
+
+export function getAvailableDates() {
+    return availableDates;
 }
 
 /**
