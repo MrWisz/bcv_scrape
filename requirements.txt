@@ -7,3 +7,4 @@ flask-limiter
 pymongo
 dnspython
 python-dotenv
+tzdata

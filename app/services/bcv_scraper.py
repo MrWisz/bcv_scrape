@@ -1,6 +1,9 @@
 """
 Service for scraping exchange rates from Banco Central de Venezuela
 """
+from datetime import datetime
+from zoneinfo import ZoneInfo
+
 import requests
 from lxml import html
 import urllib3
@@ -10,22 +13,33 @@ from app.services.ttl_cache import TTLCache
 # Disable SSL warnings
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
-# BCV only publishes new rates once a day; matches the external refresh cadence
-_CACHE_TTL_SECONDS = 24 * 60 * 60
+# Short TTL just to avoid re-scraping bcv.org.ve on every single request.
+# The real "has BCV published a new rate" check is the Caracas calendar-day
+# comparison below - BCV updates once a day at no fixed time, so a flat
+# rolling TTL (e.g. 24h since last scrape) can stay "fresh" well past the
+# moment BCV actually publishes the new day's rate.
+_CACHE_TTL_SECONDS = 30 * 60
 _cache = TTLCache(ttl_seconds=_CACHE_TTL_SECONDS)
 _CACHE_KEY = 'bcv_rates'
+_CARACAS_TZ = ZoneInfo("America/Caracas")
+_cached_day = None
 
 
 def scrape_exchange_rates():
     """
     Scrapes exchange rates from Banco Central de Venezuela website.
-    Cached for 24 hours to avoid re-scraping bcv.org.ve on every request.
+    Cached briefly to avoid re-scraping bcv.org.ve on every request, but
+    always re-scrapes once the Caracas calendar day rolls over so a new
+    BCV-published rate isn't masked by a stale cache entry.
 
     Returns:
         dict: Dictionary containing USD, EUR rates and date, or None if failed
     """
+    global _cached_day
+
+    current_day = datetime.now(_CARACAS_TZ).date()
     cached_rates, is_fresh = _cache.get(_CACHE_KEY)
-    if is_fresh:
+    if is_fresh and _cached_day == current_day:
         return cached_rates
 
     url = "https://www.bcv.org.ve/"
@@ -73,6 +87,7 @@ def scrape_exchange_rates():
         if rates and 'USD' in rates and 'EUR' in rates and 'date' in rates:
             save_rate_to_history(rates['date'], rates['USD'], rates['EUR'])
             _cache.set(_CACHE_KEY, rates)
+            _cached_day = current_day
             return rates
 
         # Incomplete scrape - fall back to stale cache rather than failing outright
