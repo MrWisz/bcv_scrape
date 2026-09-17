@@ -22,7 +22,12 @@ export function getCachedBootstrap() {
 
         const { data, timestamp } = JSON.parse(cached);
 
-        if (Date.now() - timestamp < BOOTSTRAP_CACHE_DURATION) {
+        // Guard against a shape from a previous deploy (e.g. a renamed
+        // field) lingering in localStorage and silently producing NaN.
+        const hasExpectedShape = data && Array.isArray(data.dates) && data.rates
+            && data.binanceRate !== undefined;
+
+        if (hasExpectedShape && Date.now() - timestamp < BOOTSTRAP_CACHE_DURATION) {
             console.log('Using cached bootstrap data');
             return data;
         }
