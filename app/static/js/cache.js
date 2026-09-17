@@ -3,10 +3,12 @@
  */
 
 const CACHE_KEY = 'bcv_rates_cache';
-const CACHE_DURATION = 4 * 60 * 60 * 1000; // 4 hours in milliseconds
+// Matches the backend's cache window (app/services/bcv_scraper.py) so a
+// browser never shows rates more stale than the API itself would serve.
+const CACHE_DURATION = 30 * 60 * 1000; // 30 minutes in milliseconds
 
 const BOOTSTRAP_CACHE_KEY = 'bcv_calculator_bootstrap';
-const BOOTSTRAP_CACHE_DURATION = 4 * 60 * 60 * 1000; // 4 hours in milliseconds
+const BOOTSTRAP_CACHE_DURATION = 30 * 60 * 1000; // 30 minutes in milliseconds
 
 /**
  * Get the cached calculator bootstrap data (available dates, most recent
