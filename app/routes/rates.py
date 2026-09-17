@@ -4,7 +4,6 @@ Routes for BCV exchange rate endpoints
 from flask import Blueprint, jsonify, request
 from app.services.dolarapi_client import (
     get_official_rates,
-    get_parallel_rate,
     get_all_rates,
     get_rate_by_date,
     get_available_dates,
@@ -457,59 +456,3 @@ def get_usd_change():
             'success': False,
             'error': 'Insufficient data to calculate percentage change. Need at least 2 saved rates.'
         }), 404
-
-
-@rates_bp.route('/usd/paralelo', methods=['GET'])
-@limiter.limit(RATE_LIMIT_RATES)
-@require_api_key
-def get_usd_paralelo_rate():
-    """
-    Get USD parallel/black-market exchange rate
-    ---
-    tags:
-      - Exchange Rates
-    security:
-      - ApiKeyAuth: []
-    summary: Get the USD parallel (non-official) exchange rate
-    description: Retrieves the current USD to VES parallel/black-market rate from DolarAPI.
-    responses:
-      200:
-        description: Successfully retrieved parallel rate
-        schema:
-          type: object
-          properties:
-            success:
-              type: boolean
-              example: true
-            currency:
-              type: string
-              example: "USD"
-            rate:
-              type: number
-              example: 934.576908
-              description: USD to VES parallel exchange rate
-      500:
-        description: Failed to fetch parallel rate
-        schema:
-          type: object
-          properties:
-            success:
-              type: boolean
-              example: false
-            error:
-              type: string
-              example: "Failed to fetch parallel rate"
-    """
-    rate = get_parallel_rate()
-
-    if rate is not None:
-        return jsonify({
-            'success': True,
-            'currency': 'USD',
-            'rate': rate
-        }), 200
-    else:
-        return jsonify({
-            'success': False,
-            'error': 'Failed to fetch parallel rate'
-        }), 500

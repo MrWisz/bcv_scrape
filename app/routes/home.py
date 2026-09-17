@@ -46,9 +46,9 @@ def home():
                 /rates/date:
                   type: string
                   example: "Get the applicable date for the rates"
-                /rates/usd/paralelo:
+                /p2p/usdt:
                   type: string
-                  example: "Get the USD parallel (non-official) exchange rate"
+                  example: "Get Binance P2P USDT/VES buy price"
             documentation:
               type: string
               example: "Visit /docs for interactive API documentation"
@@ -60,7 +60,7 @@ def home():
             '/rates/usd': 'Get only USD rate',
             '/rates/eur': 'Get only EUR rate',
             '/rates/date': 'Get the applicable date for the rates',
-            '/rates/usd/paralelo': 'Get the USD parallel (non-official) exchange rate'
+            '/p2p/usdt': 'Get Binance P2P USDT/VES buy price'
         },
         'documentation': 'Visit /docs for interactive API documentation'
     }), 200

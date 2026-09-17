@@ -1,16 +1,16 @@
 # Venezuela Exchange Rate API
 
-A Flask API that serves Venezuelan exchange rates — the official (BCV) rate and the parallel/black-market rate — by consuming the public [DolarAPI](https://dolarapi.com/docs/venezuela/) service.
+A Flask API that serves the official (BCV) Venezuelan exchange rate — by consuming the public [DolarAPI](https://dolarapi.com/docs/venezuela/) service — plus real-time USDT/VES prices from Binance P2P.
 
 ## Features
 
 - Official (BCV) USD and EUR rates, sourced from DolarAPI
-- Parallel/black-market USD rate, sourced from DolarAPI
+- Fetches real-time USDT/VES prices from Binance P2P marketplace
 - Includes applicable date for exchange rates
 - Full historical rate lookup (proxied from DolarAPI's own history)
 - Interactive Swagger/OpenAPI documentation with API key support
 - REST API endpoints for easy integration
-- Web App calculator for USD/EUR/Paralelo to VES conversion
+- Web App calculator for USD/EUR/USDT to VES conversion
 - Deployable to Render
 
 ## Authentication
@@ -33,15 +33,17 @@ When using the Swagger UI at `/docs`, click the **Authorize** button at the top 
 - `GET /rates/eur` - Get only EUR rate
 - `GET /rates/date` - Get the applicable date for the rates
 - `GET /rates/usd/change` - Get USD percentage change vs previous saved day
-- `GET /rates/usd/paralelo` - Get the USD parallel (non-official) exchange rate
 
 ### Historical Rates
 - `GET /rates/history` - Get all historical exchange rates
 - `GET /rates/history/dates` - Get list of available dates
 - `GET /rates/history/<date>` - Get rates for a specific date
 
+### P2P Cryptocurrency Prices
+- `GET /p2p/usdt` - Get Binance P2P USDT/VES buy price
+
 ### Web App
-- `GET /calculator` - Telegram Web App currency calculator (USD/EUR/Paralelo to VES)
+- `GET /calculator` - Telegram Web App currency calculator (USD/EUR/USDT to VES)
 
 ### Documentation
 - `GET /` - API information and available endpoints
@@ -69,7 +71,7 @@ python api.py
 
 ## Data Source
 
-All rates and history come from [DolarAPI](https://ve.dolarapi.com) at request time. Responses are cached in-process (30 minutes for current rates, 3 hours for history) to avoid hitting DolarAPI on every request — see `app/services/dolarapi_client.py`. There is no local database; nothing needs to be provisioned or migrated.
+Official (BCV) rates and history come from [DolarAPI](https://ve.dolarapi.com) at request time. Responses are cached in-process (30 minutes for current rates, 3 hours for history) to avoid hitting DolarAPI on every request — see `app/services/dolarapi_client.py`. The USDT/VES rate comes directly from Binance P2P (`app/services/binance_p2p.py`), cached for 8 hours. There is no local database; nothing needs to be provisioned or migrated.
 
 ## Migrating from the old scraper/MongoDB setup
 
@@ -142,15 +144,6 @@ This project used to scrape bcv.org.ve directly and store history in MongoDB Atl
 }
 ```
 
-### GET /rates/usd/paralelo
-```json
-{
-  "success": true,
-  "currency": "USD",
-  "rate": 934.576908
-}
-```
-
 ### GET /rates/history/dates
 ```json
 {
@@ -168,6 +161,17 @@ This project used to scrape bcv.org.ve directly and store history in MongoDB Atl
     "USD": "36,50000000",
     "EUR": "39,75000000"
   }
+}
+```
+
+### GET /p2p/usdt
+```json
+{
+  "success": true,
+  "currency": "USDT",
+  "fiat": "VES",
+  "price": 36.85,
+  "source": "Binance P2P"
 }
 ```
 

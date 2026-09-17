@@ -3,7 +3,7 @@
  */
 
 const CACHE_KEY = 'bcv_rates_cache';
-// Matches the backend's cache window (app/services/bcv_scraper.py) so a
+// Matches the backend's cache window (app/services/dolarapi_client.py) so a
 // browser never shows rates more stale than the API itself would serve.
 const CACHE_DURATION = 30 * 60 * 1000; // 30 minutes in milliseconds
 
@@ -12,8 +12,8 @@ const BOOTSTRAP_CACHE_DURATION = 30 * 60 * 1000; // 30 minutes in milliseconds
 
 /**
  * Get the cached calculator bootstrap data (available dates, most recent
- * rates, and parallel rate), if present and not expired.
- * @returns {Object|null} { dates, rates, parallelRate } or null if invalid/expired
+ * rates, and Binance rate), if present and not expired.
+ * @returns {Object|null} { dates, rates, binanceRate } or null if invalid/expired
  */
 export function getCachedBootstrap() {
     try {
@@ -36,8 +36,8 @@ export function getCachedBootstrap() {
 
 /**
  * Save calculator bootstrap data (available dates, most recent rates, and
- * parallel rate) so the next page load can skip the initial network calls.
- * @param {Object} data - { dates, rates, parallelRate }
+ * Binance rate) so the next page load can skip the initial network calls.
+ * @param {Object} data - { dates, rates, binanceRate }
  */
 export function cacheBootstrap(data) {
     try {

@@ -3,7 +3,7 @@
  */
 
 import { initTelegram, calculate, setupEventListeners } from './calculator.js';
-import { loadRatesByDate, scheduleNextUpdate, loadParallelRate, applyRates, getRates, applyParallelRate, getParallelRate } from './rates.js';
+import { loadRatesByDate, scheduleNextUpdate, loadBinanceRate, applyRates, getRates, applyBinanceRate, getBinanceRate } from './rates.js';
 import { loadAvailableDates, applyAvailableDates, onDateChange, getAvailableDates } from './dates.js';
 import { getCachedBootstrap, cacheBootstrap } from './cache.js';
 
@@ -20,10 +20,10 @@ window.calculate = calculate;
 function maybeCacheBootstrap() {
     const dates = getAvailableDates();
     const rates = getRates();
-    const parallelRate = getParallelRate();
+    const binanceRate = getBinanceRate();
 
-    if (dates.length > 0 && rates.USD && parallelRate !== null) {
-        cacheBootstrap({ dates, rates, parallelRate });
+    if (dates.length > 0 && rates.USD && binanceRate !== null) {
+        cacheBootstrap({ dates, rates, binanceRate });
     }
 }
 
@@ -35,15 +35,15 @@ document.addEventListener('DOMContentLoaded', function() {
         // Populate everything from cache - no network calls on this load
         applyAvailableDates(cached.dates, () => {});
         applyRates(cached.rates);
-        applyParallelRate(cached.parallelRate);
+        applyBinanceRate(cached.binanceRate);
     } else {
         // Load available dates first, then load rates for the most recent date
         loadAvailableDates((mostRecentDate) => {
             loadRatesByDate(mostRecentDate).then(maybeCacheBootstrap);
         });
 
-        // Load the live parallel rate (independent of the selected history date)
-        loadParallelRate().then(maybeCacheBootstrap);
+        // Load the live Binance P2P rate (independent of the selected history date)
+        loadBinanceRate().then(maybeCacheBootstrap);
     }
 
     // Schedule automatic updates at 4:30 PM

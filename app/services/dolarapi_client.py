@@ -1,9 +1,9 @@
 """
 Client for DolarAPI (https://dolarapi.com) - Venezuela exchange rates.
 
-Replaces the BCV website scraper and the Binance P2P integration with a
-single public API that already tracks both the official (BCV) rate and
-the parallel/black-market rate, plus their full history.
+Replaces the BCV website scraper with a public API that already tracks
+the official (BCV) rate and its full history. Binance P2P is still used
+separately for the USDT rate (see app/services/binance_p2p.py).
 
 DolarAPI documents no rate limit, but it's a free, unauthenticated public
 API, so every call here is cached in-process to keep our own traffic to
@@ -36,7 +36,6 @@ _MONTHS_ES_TO_NUM = {name: f"{i + 1:02d}" for i, name in enumerate(_MONTHS_ES)}
 _RATES_CACHE_TTL_SECONDS = 30 * 60
 _rates_cache = TTLCache(ttl_seconds=_RATES_CACHE_TTL_SECONDS)
 _OFFICIAL_CACHE_KEY = 'official_rates'
-_PARALLEL_CACHE_KEY = 'parallel_rate'
 _cached_official_day = None
 
 # History barely changes intraday (only "today" gets added once), so it's
@@ -112,33 +111,6 @@ def get_official_rates():
     except Exception as e:
         print(f"An error occurred: {e}")
         return cached_rates
-
-
-def get_parallel_rate():
-    """
-    Fetches the current parallel/black-market USD rate from DolarAPI.
-    This is what the calculator uses as its "unofficial" rate, replacing
-    the old Binance P2P integration.
-
-    Returns:
-        float: The parallel USD/VES rate, or None if failed
-    """
-    cached_price, is_fresh = _rates_cache.get(_PARALLEL_CACHE_KEY)
-    if is_fresh:
-        return cached_price
-
-    try:
-        response = requests.get(f"{BASE_URL}/dolares/paralelo", timeout=10)
-        response.raise_for_status()
-        price = response.json()['promedio']
-        _rates_cache.set(_PARALLEL_CACHE_KEY, price)
-        return price
-    except requests.exceptions.RequestException as e:
-        print(f"Error fetching parallel rate from DolarAPI: {e}")
-        return cached_price
-    except Exception as e:
-        print(f"An error occurred: {e}")
-        return cached_price
 
 
 def _get_official_history():
