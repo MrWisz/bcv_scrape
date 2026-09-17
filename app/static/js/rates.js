@@ -10,7 +10,7 @@ const SCHEDULED_UPDATE_HOUR = 16; // 4 PM
 const SCHEDULED_UPDATE_MINUTE = 30; // 4:30 PM Venezuela time
 
 let rates = {};
-let binanceRate = null;
+let parallelRate = null;
 
 /**
  * Load exchange rates (from cache or API)
@@ -112,39 +112,39 @@ export function applyRates(cachedRates) {
 }
 
 /**
- * Apply a Binance rate from cache (or elsewhere), skipping the network call
- * @param {number} rate - USDT/VES rate
+ * Apply a parallel rate from cache (or elsewhere), skipping the network call
+ * @param {number} rate - USD/VES parallel rate
  */
-export function applyBinanceRate(rate) {
-    binanceRate = rate;
-    document.getElementById('binance-rate').textContent =
-        truncateDecimals(binanceRate).toFixed(2) + ' VES';
+export function applyParallelRate(rate) {
+    parallelRate = rate;
+    document.getElementById('parallel-rate').textContent =
+        truncateDecimals(parallelRate).toFixed(2) + ' VES';
 }
 
 /**
- * Load the current Binance P2P USDT/VES rate (live, not tied to a history date)
+ * Load the current USD/VES parallel rate (live, not tied to a history date)
  */
-export async function loadBinanceRate() {
+export async function loadParallelRate() {
     try {
-        const response = await apiFetch('/p2p/usdt');
+        const response = await apiFetch('/rates/usd/paralelo');
         const data = await response.json();
 
         if (data.success) {
-            binanceRate = data.price;
-            document.getElementById('binance-rate').textContent =
-                truncateDecimals(binanceRate).toFixed(2) + ' VES';
+            parallelRate = data.rate;
+            document.getElementById('parallel-rate').textContent =
+                truncateDecimals(parallelRate).toFixed(2) + ' VES';
         }
     } catch (error) {
-        console.error('Error loading Binance P2P rate:', error);
+        console.error('Error loading parallel rate:', error);
     }
 }
 
 /**
- * Get the current Binance P2P rate
- * @returns {number|null} Current USDT/VES rate, or null if not loaded yet
+ * Get the current parallel rate
+ * @returns {number|null} Current USD/VES parallel rate, or null if not loaded yet
  */
-export function getBinanceRate() {
-    return binanceRate;
+export function getParallelRate() {
+    return parallelRate;
 }
 
 /**
@@ -180,7 +180,7 @@ export function scheduleNextUpdate() {
     setTimeout(() => {
         console.log('Scheduled update triggered at 4:30 PM Venezuela time');
         loadRates(true); // Force refresh
-        loadBinanceRate();
+        loadParallelRate();
         scheduleNextUpdate(); // Schedule next update
     }, timeUntilUpdate);
 }

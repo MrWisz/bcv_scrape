@@ -1,5 +1,5 @@
 """
-BCV Exchange Rate Scraper API
+Venezuela Exchange Rate API
 Main application entry point
 """
 from dotenv import load_dotenv

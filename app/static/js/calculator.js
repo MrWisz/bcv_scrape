@@ -3,7 +3,7 @@
  */
 
 import { truncateDecimals, showError, hideError } from './utils.js';
-import { getRates, getBinanceRate } from './rates.js';
+import { getRates, getParallelRate } from './rates.js';
 
 let tg = null;
 
@@ -33,11 +33,11 @@ export function calculate() {
 
     let rate;
 
-    if (currency === 'USDT') {
-        rate = getBinanceRate();
+    if (currency === 'PARALELO') {
+        rate = getParallelRate();
 
         if (rate === null || rate === undefined) {
-            showError('La tasa de Binance P2P aún no está disponible');
+            showError('La tasa paralela aún no está disponible');
             return;
         }
     } else {
@@ -63,9 +63,11 @@ export function calculate() {
         maximumFractionDigits: 2
     });
 
+    const currencyLabel = currency === 'PARALELO' ? 'USD (Paralelo)' : currency;
+
     document.getElementById('result-value').textContent = resultWithSeparator + ' VES';
     document.getElementById('result-detail').textContent =
-        `${formattedAmount} ${currency} × ${formattedRate} = ${resultWithSeparator} VES`;
+        `${formattedAmount} ${currencyLabel} × ${formattedRate} = ${resultWithSeparator} VES`;
     document.getElementById('result').classList.add('show');
 
     // Haptic feedback

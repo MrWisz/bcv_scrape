@@ -30,7 +30,7 @@ def home():
           properties:
             message:
               type: string
-              example: "BCV Exchange Rate Scraper API"
+              example: "Venezuela Exchange Rate API"
             endpoints:
               type: object
               properties:
@@ -46,21 +46,21 @@ def home():
                 /rates/date:
                   type: string
                   example: "Get the applicable date for the rates"
-                /p2p/usdt:
+                /rates/usd/paralelo:
                   type: string
-                  example: "Get Binance P2P USDT/VES buy price"
+                  example: "Get the USD parallel (non-official) exchange rate"
             documentation:
               type: string
               example: "Visit /docs for interactive API documentation"
     """
     return jsonify({
-        'message': 'BCV Exchange Rate Scraper API',
+        'message': 'Venezuela Exchange Rate API',
         'endpoints': {
             '/rates': 'Get all exchange rates (USD, EUR, and date)',
             '/rates/usd': 'Get only USD rate',
             '/rates/eur': 'Get only EUR rate',
             '/rates/date': 'Get the applicable date for the rates',
-            '/p2p/usdt': 'Get Binance P2P USDT/VES buy price'
+            '/rates/usd/paralelo': 'Get the USD parallel (non-official) exchange rate'
         },
         'documentation': 'Visit /docs for interactive API documentation'
     }), 200

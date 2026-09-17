@@ -157,3 +157,16 @@ button:active {
 .date-selector .input-group {
     margin-bottom: 0;
 }
+
+.disclaimer {
+    font-size: 11px;
+    line-height: 1.5;
+    color: var(--tg-theme-hint-color, #999999);
+    text-align: center;
+    margin-top: 20px;
+}
+
+.disclaimer a {
+    color: inherit;
+    text-decoration: underline;
+}

@@ -2,17 +2,23 @@
 Routes for BCV exchange rate endpoints
 """
 from flask import Blueprint, jsonify, request
-from app.services.bcv_scraper import scrape_exchange_rates
-from app.services.rates_history import get_all_rates, get_rate_by_date, get_available_dates, get_usd_percentage_change
+from app.services.dolarapi_client import (
+    get_official_rates,
+    get_parallel_rate,
+    get_all_rates,
+    get_rate_by_date,
+    get_available_dates,
+    get_usd_percentage_change,
+)
 from app.extensions import limiter
-from app.config import RATE_LIMIT_SCRAPE, RATE_LIMIT_HISTORY
+from app.config import RATE_LIMIT_RATES, RATE_LIMIT_HISTORY
 from app.auth import require_api_key
 
 rates_bp = Blueprint('rates', __name__, url_prefix='/rates')
 
 
 @rates_bp.route('/', methods=['GET'])
-@limiter.limit(RATE_LIMIT_SCRAPE)
+@limiter.limit(RATE_LIMIT_RATES)
 @require_api_key
 def get_rates():
     """
@@ -49,7 +55,7 @@ def get_rates():
                   example: "2025-12-30"
                   description: Date the rates are applicable
       500:
-        description: Failed to scrape exchange rates
+        description: Failed to fetch exchange rates
         schema:
           type: object
           properties:
@@ -58,9 +64,9 @@ def get_rates():
               example: false
             error:
               type: string
-              example: "Failed to scrape exchange rates"
+              example: "Failed to fetch exchange rates"
     """
-    rates = scrape_exchange_rates()
+    rates = get_official_rates()
 
     if rates:
         return jsonify({
@@ -70,12 +76,12 @@ def get_rates():
     else:
         return jsonify({
             'success': False,
-            'error': 'Failed to scrape exchange rates'
+            'error': 'Failed to fetch exchange rates'
         }), 500
 
 
 @rates_bp.route('/usd', methods=['GET'])
-@limiter.limit(RATE_LIMIT_SCRAPE)
+@limiter.limit(RATE_LIMIT_RATES)
 @require_api_key
 def get_usd_rate():
     """
@@ -104,7 +110,7 @@ def get_usd_rate():
               example: 36.50
               description: USD to VES exchange rate
       500:
-        description: Failed to scrape USD rate
+        description: Failed to fetch USD rate
         schema:
           type: object
           properties:
@@ -113,9 +119,9 @@ def get_usd_rate():
               example: false
             error:
               type: string
-              example: "Failed to scrape USD rate"
+              example: "Failed to fetch USD rate"
     """
-    rates = scrape_exchange_rates()
+    rates = get_official_rates()
 
     if rates and 'USD' in rates:
         return jsonify({
@@ -126,12 +132,12 @@ def get_usd_rate():
     else:
         return jsonify({
             'success': False,
-            'error': 'Failed to scrape USD rate'
+            'error': 'Failed to fetch USD rate'
         }), 500
 
 
 @rates_bp.route('/eur', methods=['GET'])
-@limiter.limit(RATE_LIMIT_SCRAPE)
+@limiter.limit(RATE_LIMIT_RATES)
 @require_api_key
 def get_eur_rate():
     """
@@ -160,7 +166,7 @@ def get_eur_rate():
               example: 39.75
               description: EUR to VES exchange rate
       500:
-        description: Failed to scrape EUR rate
+        description: Failed to fetch EUR rate
         schema:
           type: object
           properties:
@@ -169,9 +175,9 @@ def get_eur_rate():
               example: false
             error:
               type: string
-              example: "Failed to scrape EUR rate"
+              example: "Failed to fetch EUR rate"
     """
-    rates = scrape_exchange_rates()
+    rates = get_official_rates()
 
     if rates and 'EUR' in rates:
         return jsonify({
@@ -182,12 +188,12 @@ def get_eur_rate():
     else:
         return jsonify({
             'success': False,
-            'error': 'Failed to scrape EUR rate'
+            'error': 'Failed to fetch EUR rate'
         }), 500
 
 
 @rates_bp.route('/date', methods=['GET'])
-@limiter.limit(RATE_LIMIT_SCRAPE)
+@limiter.limit(RATE_LIMIT_RATES)
 @require_api_key
 def get_date():
     """
@@ -213,7 +219,7 @@ def get_date():
               example: "2025-12-30"
               description: The date the rates are applicable
       500:
-        description: Failed to scrape date
+        description: Failed to fetch date
         schema:
           type: object
           properties:
@@ -222,9 +228,9 @@ def get_date():
               example: false
             error:
               type: string
-              example: "Failed to scrape date"
+              example: "Failed to fetch date"
     """
-    rates = scrape_exchange_rates()
+    rates = get_official_rates()
 
     if rates and 'date' in rates:
         return jsonify({
@@ -234,7 +240,7 @@ def get_date():
     else:
         return jsonify({
             'success': False,
-            'error': 'Failed to scrape date'
+            'error': 'Failed to fetch date'
         }), 500
 
 
@@ -250,7 +256,7 @@ def get_history():
     security:
       - ApiKeyAuth: []
     summary: Get all historical exchange rates
-    description: Retrieves all saved historical exchange rates from the database.
+    description: Retrieves all historical exchange rates (sourced from DolarAPI).
     responses:
       200:
         description: Successfully retrieved history
@@ -451,3 +457,59 @@ def get_usd_change():
             'success': False,
             'error': 'Insufficient data to calculate percentage change. Need at least 2 saved rates.'
         }), 404
+
+
+@rates_bp.route('/usd/paralelo', methods=['GET'])
+@limiter.limit(RATE_LIMIT_RATES)
+@require_api_key
+def get_usd_paralelo_rate():
+    """
+    Get USD parallel/black-market exchange rate
+    ---
+    tags:
+      - Exchange Rates
+    security:
+      - ApiKeyAuth: []
+    summary: Get the USD parallel (non-official) exchange rate
+    description: Retrieves the current USD to VES parallel/black-market rate from DolarAPI.
+    responses:
+      200:
+        description: Successfully retrieved parallel rate
+        schema:
+          type: object
+          properties:
+            success:
+              type: boolean
+              example: true
+            currency:
+              type: string
+              example: "USD"
+            rate:
+              type: number
+              example: 934.576908
+              description: USD to VES parallel exchange rate
+      500:
+        description: Failed to fetch parallel rate
+        schema:
+          type: object
+          properties:
+            success:
+              type: boolean
+              example: false
+            error:
+              type: string
+              example: "Failed to fetch parallel rate"
+    """
+    rate = get_parallel_rate()
+
+    if rate is not None:
+        return jsonify({
+            'success': True,
+            'currency': 'USD',
+            'rate': rate
+        }), 200
+    else:
+        return jsonify({
+            'success': False,
+            'error': 'Failed to fetch parallel rate'
+        }), 500
