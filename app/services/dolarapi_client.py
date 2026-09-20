@@ -12,7 +12,6 @@ app/services/ttl_cache.py for why a plain module-level cache is safe -
 single gunicorn worker on Render).
 """
 from datetime import datetime
-from zoneinfo import ZoneInfo
 
 import requests
 
@@ -20,23 +19,12 @@ from app.services.ttl_cache import TTLCache
 
 BASE_URL = "https://ve.dolarapi.com/v1"
 
-_CARACAS_TZ = ZoneInfo("America/Caracas")
-
 _MONTHS_ES = [
     'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
     'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
 ]
 _WEEKDAYS_ES = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo']
 _MONTHS_ES_TO_NUM = {name: f"{i + 1:02d}" for i, name in enumerate(_MONTHS_ES)}
-
-# Short TTL for "current rate" endpoints, paired with the Caracas
-# calendar-day check below - DolarAPI's upstream (BCV) only publishes once
-# a day at no fixed time, so a cache needs both to avoid ever masking a
-# same-day update.
-_RATES_CACHE_TTL_SECONDS = 30 * 60
-_rates_cache = TTLCache(ttl_seconds=_RATES_CACHE_TTL_SECONDS)
-_OFFICIAL_CACHE_KEY = 'official_rates'
-_cached_official_day = None
 
 # History barely changes intraday (only "today" gets added once), so it's
 # safe to cache for longer and cut request volume further.
@@ -72,45 +60,28 @@ def _format_rate(promedio):
 
 def get_official_rates():
     """
-    Fetches the current official (BCV) USD and EUR rates from DolarAPI.
+    Gets the current official (BCV) USD and EUR rates - the most recent
+    entry in DolarAPI's own history.
+
+    This deliberately reads history instead of DolarAPI's "current rate"
+    endpoints (/cotizaciones, /dolares/oficial, /euros/oficial): those have
+    been observed lagging days behind DolarAPI's own /historicos endpoints,
+    which caused /rates to serve an older rate than /rates/history did.
+    Reading both from the same history keeps them always in sync.
 
     Returns:
-        dict: {'USD': str, 'EUR': str, 'date': str} or None if failed
+        dict: {'USD': str, 'EUR': str, 'date': str} or None if no history
     """
-    global _cached_official_day
+    history = _get_official_history()
+    if not history:
+        return None
 
-    current_day = datetime.now(_CARACAS_TZ).date()
-    cached_rates, is_fresh = _rates_cache.get(_OFFICIAL_CACHE_KEY)
-    if is_fresh and _cached_official_day == current_day:
-        return cached_rates
-
-    try:
-        response = requests.get(f"{BASE_URL}/cotizaciones", timeout=10)
-        response.raise_for_status()
-        quotes = response.json()
-
-        usd = next((q for q in quotes if q['moneda'] == 'USD' and q['fuente'] == 'oficial'), None)
-        eur = next((q for q in quotes if q['moneda'] == 'EUR' and q['fuente'] == 'oficial'), None)
-
-        if not usd or not eur:
-            return cached_rates
-
-        rates = {
-            'USD': _format_rate(usd['promedio']),
-            'EUR': _format_rate(eur['promedio']),
-            'date': _to_spanish_date(usd['fechaActualizacion'])
-        }
-
-        _rates_cache.set(_OFFICIAL_CACHE_KEY, rates)
-        _cached_official_day = current_day
-        return rates
-
-    except requests.exceptions.RequestException as e:
-        print(f"Error fetching rates from DolarAPI: {e}")
-        return cached_rates
-    except Exception as e:
-        print(f"An error occurred: {e}")
-        return cached_rates
+    latest = history[-1]
+    return {
+        'USD': latest['USD'],
+        'EUR': latest['EUR'],
+        'date': _to_spanish_date(latest['date'])
+    }
 
 
 def _get_official_history():

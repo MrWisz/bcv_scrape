@@ -4,4 +4,3 @@ gunicorn
 flasgger
 flask-limiter
 python-dotenv
-tzdata
